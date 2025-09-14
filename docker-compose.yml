@@ -22,22 +22,22 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-    env_file: .env
-    ports:
-      - "8081:8000"
     depends_on: 
       - db
-    networks:
-      - backend_net
+    env_file: .env
     environment:
       - prometheus_multiproc_dir=/tmp/metrics
-    read_only: true
-    tmpfs:
-      - /tmp
     volumes:
       - metrics_data:/tmp/metrics
+    tmpfs:
+      - /tmp
+    read_only: true
     security_opt:
       - no-new-privileges:true
+    ports:
+      - "8081:8000"
+    networks:
+      - backend_net
     deploy:
       resources:
         limits:
@@ -46,16 +46,16 @@ services:
   
   prometheus:
     image: prom/prometheus:v3.5.0
-    volumes:
-      - ./monitoring/prometheus/:/etc/prometheus/:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
     depends_on:
       - app
       - node-exporter
+    volumes:
+      - ./monitoring/prometheus/:/etc/prometheus/:ro
+      - prometheus_data:/prometheus
     networks:
       - backend_net
+    ports:
+      - "9090:9090"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
       interval: 10s
@@ -69,6 +69,8 @@ services:
 
   grafana:
     image: grafana/grafana:12.1.1
+    depends_on:
+      - prometheus
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
@@ -78,8 +80,6 @@ services:
     read_only: true
     ports:
       - "3000:3000"
-    depends_on:
-      - prometheus
     networks:
       - backend_net
     healthcheck:
@@ -95,9 +95,9 @@ services:
 
   node-exporter:
     image: prom/node-exporter:v1.9.1
+    read_only: true
     ports:
       - "9100:9100"
-    read_only: true
     networks:
       - backend_net
     healthcheck:
