@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, Response, request
+from flask import Flask, jsonify, Response, request, g
 from prometheus_client import (
     Counter,
     Histogram,
@@ -15,10 +15,10 @@ from dotenv import load_dotenv
 import logging
 import sys
 
-app = Flask(__name__)
 
 # load .env from repo root
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 
 # Get db link and create db engine
 POSTGRES_USER = os.getenv("POSTGRES_USER")
@@ -31,20 +31,28 @@ DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERV
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger("app")
 
+
 if POSTGRES_PASSWORD:
     logDataBaseURL = DATABASE_URL.replace(POSTGRES_PASSWORD, "***")
 else:
     logDataBaseURL = DATABASE_URL
 logger.info("Using DATABASE_URL=%s", logDataBaseURL)
 
+engine = create_engine(DATABASE_URL, future=True)
+
+
+# Get engine connection or create it if not exists
+def get_connection():
+    if "db_conn" not in g:
+        g.db_conn = engine.connect()
+    return g.db_conn
+
 
 # Create table if not exists
 def init_db(retry_seconds=2, max_retries=10):
     tries = 0
-    global engine
     while True:
         try:
-            engine = create_engine(DATABASE_URL)
             with engine.begin() as conn:
                 conn.execute(
                     text(
@@ -89,6 +97,19 @@ http_requests_latency = Histogram(
     ["worker_id", "method", "endpoint"],
     buckets=[0.05, 0.1, 0.3, 0.5, 0.7, 1, 2, 5],
 )
+
+
+app = Flask(__name__)
+
+
+# ----- Hooks -----
+
+
+@app.teardown_appcontext
+def shutdown(exception=None):
+    db_conn = g.pop("db_conn", None)
+    if db_conn is not None:
+        db_conn.close()
 
 
 # ----- Middleware -----
@@ -162,11 +183,12 @@ def add_message():
         return {"status": "error", "detail": "No content"}, 400
 
     try:
-        with engine.begin() as conn:
-            conn.execute(
-                text("INSERT INTO messages (content) VALUES (:content)"),
-                {"content": content},
-            )
+        conn = get_connection()
+        conn.execute(
+            text("INSERT INTO messages (content) VALUES (:content)"),
+            {"content": content},
+        )
+        conn.commit()
         return {"status": "message saved successfully"}
     except Exception as e:
         logger.exception("Failed to add message: %s", e)
@@ -181,11 +203,12 @@ def del_message():
         return {"status": "error", "detail": "No content"}, 400
 
     try:
-        with engine.begin() as conn:
-            conn.execute(
-                text("DELETE FROM messages WHERE content = (:content)"),
-                {"content": content},
-            )
+        conn = get_connection()
+        conn.execute(
+            text("DELETE FROM messages WHERE content = (:content)"),
+            {"content": content},
+        )
+        conn.commit()
         return {"status": "ok", "detail": "message deleted successfully"}
     except Exception as e:
         logger.exception("Failed to delete message: %s", e)
@@ -195,8 +218,8 @@ def del_message():
 @app.route("/list", methods=["GET"])
 def list_messages():
     try:
-        with engine.connect() as conn:
-            rows = conn.execute(text("SELECT id, content FROM messages")).fetchall()
+        conn = get_connection()
+        rows = conn.execute(text("SELECT id, content FROM messages")).fetchall()
         return jsonify([{"id": row.id, "content": row.content} for row in rows])
     except Exception as e:
         logger.exception("Failed to get list of messages: %s", e)
