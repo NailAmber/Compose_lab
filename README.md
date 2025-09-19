@@ -1,16 +1,13 @@
 # 🚀 Docker Lab — Production-Ready Flask + CI/CD + Monitoring
 
-A **DevOps showcase project**:\
-A minimal Flask app packaged with **Docker**, orchestrated with **Compose**, observed with **Prometheus + Grafana**, and delivered via a **secure CI/CD pipeline**.
+A **DevOps showcase project** built to demonstrate **end-to-end software delivery** with modern practices:
 
-This repository is designed as a **portfolio project** to demonstrate **modern DevOps practices**:
-
-- ✅ Containerization (multi-stage Dockerfile, non-root user, healthchecks)
-- ✅ Multi-service orchestration (Flask, PostgreSQL, Prometheus, Grafana, node-exporter)
-- ✅ CI/CD automation (lint, test, integration test, security scan, build & deploy)
-- ✅ Observability & metrics (dashboards)
-- ✅ Security practices (Trivy scans, no-privilege containers, `.dockerignore`)
-- ✅ Backup automation for PostgreSQL
+* ✅ **Containerization**: Multi-stage Dockerfile, non-root user, healthchecks
+* ✅ **Orchestration**: Docker Compose with Flask, PostgreSQL, Prometheus, Grafana, node-exporter
+* ✅ **CI/CD**: GitHub Actions pipeline (lint → test → integration → scan → build → deploy)
+* ✅ **Observability**: Metrics, health endpoints, Grafana dashboards
+* ✅ **Security**: Trivy scans, no-new-privileges, read-only FS, `.dockerignore`
+* ✅ **Data Safety**: Automated PostgreSQL backups
 
 ---
 
@@ -21,32 +18,32 @@ This repository is designed as a **portfolio project** to demonstrate **modern D
 config:
   layout: dagre
   look: handDrawn
-  theme: redux
+  theme: default
 ---
 flowchart TD
-    Backup <-- pg_dump --> DB[("PostgreSQL")]
+    Backup <-- pg_dump --> DB["PostgreSQL"]
     App --> DB & Prometheus["Prometheus"]
     NodeExporter --> Prometheus
     Prometheus --> Grafana["Grafana Dashboards"]
-
 ```
+
 ---
 
 ## 🛠️ Tech Stack
 
-- **Language:** Python 3.13 (Flask)
-- **Database:** PostgreSQL 17
-- **Containerization:** Docker, Docker Compose
-- **CI/CD:** GitHub Actions (build → test → scan → deploy)
-- **Monitoring:** Prometheus + Grafana + node-exporter
-- **Security:** Trivy vulnerability scans
-- **Registry:** GitHub Container Registry (GHCR)
+* **Language**: Python 3.13 (Flask, SQLAlchemy)
+* **Database**: PostgreSQL 17
+* **Containers**: Docker, Docker Compose
+* **CI/CD**: GitHub Actions (`.github/workflows/ci-cd.yml`)
+* **Monitoring**: Prometheus + Grafana + node-exporter
+* **Security**: Trivy vulnerability scanning
+* **Registry**: GitHub Container Registry (GHCR)
 
 ---
 
 ## ⚙️ Usage
 
-### Local Development
+### 🔹 Local Development
 
 ```bash
 python -m venv .venv
@@ -55,7 +52,7 @@ pip install -r app/requirements.txt -r app/requirements-dev.txt
 python -m app
 ```
 
-### Docker Only
+### 🔹 Run with Docker
 
 ```bash
 docker build -t docker_lab:local ./app
@@ -63,15 +60,15 @@ docker run --rm -p 8000:8000 docker_lab:local
 curl http://localhost:8000/health
 ```
 
-### Full Stack with Compose
+### 🔹 Full Stack with Docker Compose
 
 ```bash
 docker compose up --build -d
 
 # Access:
-# App:        http://localhost:8081
-# Prometheus: http://localhost:9090
-# Grafana:    http://localhost:3000  (admin/admin)
+# Flask API:   http://localhost:8081
+# Prometheus:  http://localhost:9090
+# Grafana:     http://localhost:3000 (admin/admin)
 # Node Exporter: http://localhost:9100
 ```
 
@@ -79,74 +76,80 @@ docker compose up --build -d
 
 ## 🔄 CI/CD Pipeline
 
-GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
+GitHub Actions workflow (`ci-cd.yml`) covers:
 
 1. **Test & Lint**
 
-   - Run unit tests with pytest
-   - Lint with Ruff + format check with Black
+   * Unit tests (`pytest`)
+   * Linting (`ruff`) + format check (`black`)
 
-2. **Integration Test**
+2. **Integration Tests**
 
-   - Spin up Compose stack (app + db + monitoring)
-   - Wait for services to be healthy
-   - Verify metrics are scraped + Grafana datasource available
-   - Backup script verification
+   * Start full Compose stack
+   * Wait for healthchecks
+   * Run DB CRUD tests via API (`/add`, `/list`, `/delete`)
+   * Verify Prometheus scrapes + Grafana datasource
+   * Test `backup.sh` script
 
 3. **Build & Scan**
 
-   - Build Docker image (tagged with commit SHA + `latest`)
-   - Scan image with Trivy (fail on HIGH/CRITICAL)
-   - Upload scan report to GitHub Security
+   * Build Docker image with SHA + `latest` tags
+   * Scan with **Trivy** (fail on HIGH/CRITICAL)
+   * Upload SARIF report to GitHub Security
 
 4. **Push & Deploy**
 
-   - Push image to GHCR
-   - Pull + deploy with Docker Compose
+   * Push image to GHCR
+   * Deploy with Docker Compose on target host
 
 ---
 
 ## 📊 Monitoring
 
-- **Prometheus** scrapes:
-  - Flask metrics (`/metrics`)
-  - Host metrics (node-exporter)
-- **Grafana Dashboards**:
-  - QPS, error rate, latency, method breakdown  
+* **Prometheus** scrapes:
 
-👉 Example panels: ![Grafana dashboard](images/Example_dashboard.png)
+  * Flask app metrics (`/metrics`)
+  * Host metrics (node-exporter)
+* **Grafana Dashboards**:
+
+  * Requests per second, latency, error rates, method breakdown
+
+👉 Example panel:
+
+![Grafana dashboard](images/Example_dashboard.png)
 
 ---
 
 ## 🛡️ Security
 
-- Containers run as **non-root** with `no-new-privileges`
-- Images scanned by **Trivy** in CI
-- `.dockerignore` excludes secrets, `.git`, `.venv`
-- Read-only root FS (`read_only: true`) for app container
+* Containers run as **non-root** with `no-new-privileges`
+* App container uses **read-only filesystem** + `tmpfs`
+* Images scanned with **Trivy** during CI/CD
+* `.dockerignore` excludes secrets, `.git`, `.venv`
 
 ---
 
 ## 💾 Backup Automation
 
-`backup.sh` script:
+`backup.sh` script ensures database safety:
 
-- Runs `pg_dump` with timestamp
-- Produces compressed archive
-- Verified during CI integration tests
-
----
-
-## 📚 Next Steps (Future Work)
-
-- IaC with Terraform/Ansible (deploy to cloud)
-- Kubernetes manifests/Helm for orchestration
-- Centralized logging (Loki/ELK)
-- CI/CD notifications to Slack/Discord
-- Image signing (Cosign), SBOM generation
+* Uses `pg_dump` with timestamp
+* Compresses backups into `.gz`
+* Keeps only latest N backups (configurable)
+* Verified in CI/CD integration tests
 
 ---
 
-✍️ **Author:** [NailAmber](https://github.com/NailAmber)\
-📦 Images: [GHCR Packages](https://github.com/NailAmber?tab=packages)\
-📌 License: MIT
+## 📚 Future Improvements
+
+* Infrastructure as Code (Terraform, Ansible)
+* Kubernetes manifests / Helm charts
+* Centralized logging (Loki/ELK)
+* CI/CD notifications to Slack/Discord
+* SBOM + image signing (Cosign)
+
+---
+
+✍️ **Author:** [NailAmber](https://github.com/NailAmber)
+📦 **Images:** [GHCR Packages](https://github.com/NailAmber?tab=packages)
+📌 **License:** MIT
