@@ -18,7 +18,6 @@ A **DevOps showcase project** built to demonstrate **end-to-end software deliver
 config:
   layout: dagre
   look: handDrawn
-  theme: default
 ---
 flowchart TD
     Backup <-- pg_dump --> DB["PostgreSQL"]
