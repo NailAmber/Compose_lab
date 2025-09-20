@@ -23,7 +23,7 @@ RUN pip wheel --wheel-dir /wheels -r requirements.txt
 # ----- Runtime Stage -----
 FROM python:3.13-slim-bookworm
 
-LABEL org.opencontainers.image.source="https://github.com/NailAmber/Docker_lab"
+LABEL org.opencontainers.image.source="https://github.com/NailAmber/Compose_lab"
 LABEL org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
