@@ -48,7 +48,7 @@ flowchart TD
 python -m venv .venv
 source .venv/bin/activate
 pip install -r app/requirements.txt -r app/requirements-dev.txt
-python -m app
+python app/app.py
 ```
 
 ### 🔹 Run with Docker
@@ -149,6 +149,6 @@ GitHub Actions workflow (`ci-cd.yml`) covers:
 
 ---
 
-✍️ **Author:** [NailAmber](https://github.com/NailAmber)
-📦 **Images:** [GHCR Packages](https://github.com/NailAmber?tab=packages)
+✍️ **Author:** [NailAmber](https://github.com/NailAmber)  
+📦 **Images:** [GHCR Packages](https://github.com/NailAmber?tab=packages)  
 📌 **License:** MIT
