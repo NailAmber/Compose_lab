@@ -1,4 +1,4 @@
-# 🚀 Docker Lab — Production-Ready Flask + CI/CD + Monitoring
+# 🚀 Compose Lab — Production-Ready Flask + CI/CD + Monitoring
 
 A **DevOps showcase project** built to demonstrate **end-to-end software delivery** with modern practices:
 
