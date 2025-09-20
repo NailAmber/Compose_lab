@@ -5,7 +5,7 @@ set -a
 source .env
 set +a
 
-CONTAINER="${CONTAINER:-docker_lab-${POSTGRES_SERVICE}-1}"
+CONTAINER="${CONTAINER:-compose_lab-${POSTGRES_SERVICE}-1}"
 DB_USER="${POSTGRES_USER}"
 DB_NAME="${POSTGRES_DB}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
