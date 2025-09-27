@@ -1,4 +1,4 @@
-# 🚀 Demo Tips (for Interview)
+# 🚀 Demo Tips
 
 - Show `docker-compose.yml`: healthchecks, security opts, volumes.
 - Walk through Dockerfile: multi-stage, tini, non-root, healthcheck.
